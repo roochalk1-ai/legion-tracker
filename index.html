@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>레지오 마리애 신앙생활 기록</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#5d5a53">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="레지오">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    background: #e5e3de;
+    color: #5d5a53;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, #5d5a53, #6e6b63);
+    color: white;
+    padding: 20px 16px 16px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .header h1 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .header .subtitle {
+    font-size: 0.8rem;
+    opacity: 0.85;
+    letter-spacing: 0.5px;
+  }
+
+  /* Tab bar */
+  .tab-bar {
+    display: flex;
+    background: #6e6b63;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: none;
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    color: white;
+    border-bottom-color: #95c8cc;
+  }
+
+  /* Tab content */
+  .tab-content { display: none; padding: 16px; }
+  .tab-content.active { display: block; }
+
+  /* Date card */
+  .date-card {
+    background: white;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    text-align: center;
+  }
+  .date-main {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #4a4740;
+  }
+  .date-day {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 2px;
+  }
+  .mystery-badge {
+    display: inline-block;
+    margin-top: 10px;
+    background: #95c8cc;
+    color: #3a5a5c;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+  .mystery-icon {
+    font-size: 1rem;
+    margin-right: 4px;
+  }
+
+  /* Section card */
+  .section-card {
+    background: white;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+  .section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #6e6b63;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e8e0d5;
+  }
+
+  /* Checkbox rows */
+  .check-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0ebe4;
+  }
+  .check-row:last-child { border-bottom: none; }
+  .check-label {
+    font-size: 1rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .check-label .icon { font-size: 1.1rem; }
+
+  /* Custom checkbox */
+  .custom-check {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #95c8cc;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .custom-check.checked {
+    background: #6e6b63;
+    border-color: #6e6b63;
+  }
+  .custom-check.checked::after {
+    content: '✓';
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  /* Rosary input */
+  .rosary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+  }
+  .rosary-label {
+    font-size: 1rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rosary-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    border: 2px solid #6e6b63;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .step-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: #6e6b63;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-btn:active { background: #4a4740; }
+  .step-val {
+    width: 40px;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #4a4740;
+    background: white;
+    padding: 6px 0;
+  }
+  .step-unit {
+    font-size: 0.75rem;
+    color: #888;
+    margin-left: 6px;
+  }
+
+  /* Save button */
+  .save-btn {
+    width: 100%;
+    padding: 14px;
+    background: #5d5a53;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    box-shadow: 0 3px 10px rgba(93,90,83,0.25);
+    transition: opacity 0.2s;
+  }
+  .save-btn:active { opacity: 0.85; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #5d5a53;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    transition: transform 0.3s ease;
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Weekly tab */
+  .week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+  .week-nav-btn {
+    width: 36px;
+    height: 36px;
+    border: 2px solid #6e6b63;
+    background: white;
+    color: #6e6b63;
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .week-nav-btn:active { background: #6e6b63; color: white; }
+  .week-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #4a4740;
+  }
+
+  /* Weekly grid */
+  .week-grid-wrap {
+    background: white;
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    overflow-x: auto;
+  }
+  .week-grid {
+    min-width: 460px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .week-grid th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #6e6b63;
+    padding: 6px 4px;
+    text-align: center;
+    border-bottom: 2px solid #e0d8cf;
+    white-space: nowrap;
+  }
+  .week-grid td {
+    padding: 4px 2px;
+    text-align: center;
+    border-bottom: 1px solid #f0ebe4;
+  }
+  .week-grid tr:last-child td { border-bottom: none; }
+  .item-name {
+    font-size: 0.78rem;
+    color: #444;
+    font-weight: 600;
+    text-align: left;
+    padding-left: 4px;
+    white-space: nowrap;
+  }
+  .sum-col {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #4a4740;
+    background: #e8e4dc;
+    border-radius: 6px;
+  }
+
+  /* Small circle check for grid */
+  .grid-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid #95c8cc;
+    background: white;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-size: 0;
+  }
+  .grid-check.checked {
+    background: #6e6b63;
+    border-color: #6e6b63;
+    font-size: 0.7rem;
+    color: white;
+  }
+  .grid-check.checked::after { content: '✓'; }
+
+  /* Number input for grid (rosary, etc.) */
+  .grid-num {
+    width: 28px;
+    height: 24px;
+    border: 1.5px solid #95c8cc;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #4a4740;
+    outline: none;
+    background: white;
+  }
+  .grid-num:focus { border-color: #6e6b63; }
+
+  /* Summary card */
+  .summary-card {
+    background: linear-gradient(135deg, #e8e4dc, #d5d0c8);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border: 1px solid #b8b4ac;
+  }
+  .summary-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #6e6b63;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.82rem;
+    color: #333;
+    padding: 4px 6px;
+    background: white;
+    border-radius: 8px;
+  }
+  .summary-item .s-val {
+    font-weight: 700;
+    color: #4a4740;
+  }
+
+  /* Copy button */
+  .copy-btn {
+    width: 100%;
+    padding: 13px;
+    background: white;
+    color: #6e6b63;
+    border: 2px solid #6e6b63;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+  .copy-btn:active { background: #e8e4dc; }
+
+
+  /* History tab */
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+  .history-item {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .history-date {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #6e6b63;
+    margin-bottom: 6px;
+  }
+  .history-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .history-tag {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: #e8e4dc;
+    color: #6e6b63;
+    font-weight: 600;
+  }
+  .history-tag.done {
+    background: #6e6b63;
+    color: white;
+  }
+  .empty-msg {
+    text-align: center;
+    color: #aaa;
+    font-size: 0.9rem;
+    padding: 40px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>✝ 레지오 마리애</h1>
+  <div class="subtitle">신앙생활 기록</div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('daily')">오늘 기록</button>
+  <button class="tab-btn" onclick="switchTab('weekly')">주간 보고</button>
+  <button class="tab-btn" onclick="switchTab('history')">기록 보기</button>
+</div>
+
+<!-- ===== 오늘 기록 탭 ===== -->
+<div id="tab-daily" class="tab-content active">
+  <div class="date-card">
+    <div class="date-main" id="today-date"></div>
+    <div class="date-day" id="today-weekday"></div>
+    <div><span class="mystery-badge"><span class="mystery-icon">📿</span><span id="today-mystery"></span></span></div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">기도 체크</div>
+    <div class="check-row">
+      <div class="check-label"><span class="icon">🌅</span> 아침기도</div>
+      <div class="custom-check" id="chk-morning" onclick="toggleCheck('morning')"></div>
+    </div>
+    <div class="check-row">
+      <div class="check-label"><span class="icon">🌙</span> 저녁기도</div>
+      <div class="custom-check" id="chk-evening" onclick="toggleCheck('evening')"></div>
+    </div>
+    <div class="check-row">
+      <div class="check-label"><span class="icon">🔗</span> 까떼나</div>
+      <div class="custom-check" id="chk-catena" onclick="toggleCheck('catena')"></div>
+    </div>
+    <div class="check-row">
+      <div class="check-label"><span class="icon">🙏</span> 주모경</div>
+      <div class="custom-check" id="chk-avemaria" onclick="toggleCheck('avemaria')"></div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">묵주기도</div>
+    <div class="rosary-row">
+      <div class="rosary-label"><span class="icon">📿</span> 오늘 몇 단?</div>
+      <div style="display:flex;align-items:center">
+        <div class="rosary-stepper">
+          <button class="step-btn" onclick="changeRosary(-1)">−</button>
+          <div class="step-val" id="rosary-val">0</div>
+          <button class="step-btn" onclick="changeRosary(1)">+</button>
+        </div>
+        <span class="step-unit">단</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="padding: 0 0 6px">
+    <button class="save-btn" onclick="saveDaily()">오늘 기록 저장</button>
+  </div>
+</div>
+
+<!-- ===== 주간 보고 탭 ===== -->
+<div id="tab-weekly" class="tab-content">
+  <div class="week-nav">
+    <button class="week-nav-btn" onclick="changeWeek(-1)">&#8249;</button>
+    <div class="week-label" id="week-label"></div>
+    <button class="week-nav-btn" onclick="changeWeek(1)">&#8250;</button>
+  </div>
+
+  <div class="week-grid-wrap">
+    <table class="week-grid" id="week-table">
+      <thead>
+        <tr>
+          <th style="width:80px">항목</th>
+          <th id="wh0"></th><th id="wh1"></th><th id="wh2"></th>
+          <th id="wh3"></th><th id="wh4"></th><th id="wh5"></th><th id="wh6"></th>
+          <th style="background:#edf3fa;border-radius:6px">합계</th>
+        </tr>
+      </thead>
+      <tbody id="week-body"></tbody>
+    </table>
+  </div>
+
+  <div class="summary-card">
+    <div class="summary-title">주간 합산 요약</div>
+    <div class="summary-grid" id="weekly-summary"></div>
+  </div>
+
+  <button class="copy-btn" onclick="copyReport()">📋 보고 내용 텍스트로 복사</button>
+</div>
+
+<!-- ===== 기록 보기 탭 ===== -->
+<div id="tab-history" class="tab-content">
+  <div class="history-list" id="history-list">
+    <div class="empty-msg">저장된 기록이 없습니다.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── Data ─────────────────────────────────────────────────────────
+const MYSTERIES = ['영광의 신비','환희의 신비','고통의 신비','빛의 신비','고통의 신비','고통의 신비','환희의 신비'];
+// 0=일,1=월,2=화,3=수,4=목,5=금,6=토
+const MYSTERY_NAMES = {
+  '환희의 신비': '환희의 신비 (기쁨)',
+  '고통의 신비': '고통의 신비 (슬픔)',
+  '영광의 신비': '영광의 신비 (빛남)',
+  '빛의 신비':   '빛의 신비 (빛)',
+};
+
+const WEEK_ITEMS = [
+  { key: 'weekdayMass',  label: '평일미사', type: 'check' },
+  { key: 'familyMass',   label: '가족미사', type: 'check' },
+  { key: 'familyPrayer', label: '가족기도', type: 'num'        },
+  { key: 'holyHour',     label: '성시간',   type: 'check'      },
+  { key: 'service',      label: '봉사',     type: 'num'        },
+  { key: 'requiem',      label: '연도',     type: 'num'        },
+  { key: 'manual',       label: '교본읽기', type: 'check_page' },
+  { key: 'rosary',       label: '묵주기도', type: 'num'   },
+  { key: 'bibleWrite',   label: '성경필사', type: 'check' },
+  { key: 'meditation',   label: '말씀묵상', type: 'check' },
+  { key: 'avemaria',     label: '주모경',   type: 'check' },
+];
+
+const DAYS_KO = ['일','월','화','수','목','금','토'];
+
+// ─── State ────────────────────────────────────────────────────────
+let todayState = { morning: false, evening: false, catena: false, avemaria: false, rosary: 0 };
+let weekOffset = 0; // 0 = this week
+
+function getStorage(key, def) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
+}
+function setStorage(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+// ─── Daily Tab ────────────────────────────────────────────────────
+function dateKey(d) {
+  return d.toISOString().slice(0,10);
+}
+
+function initDaily() {
+  const today = new Date();
+  const dow = today.getDay();
+  const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('today-date').textContent =
+    `${today.getFullYear()}년 ${months[today.getMonth()]} ${today.getDate()}일`;
+  document.getElementById('today-weekday').textContent = `${DAYS_KO[dow]}요일`;
+  document.getElementById('today-mystery').textContent = MYSTERIES[dow];
+
+  const saved = getStorage('daily_' + dateKey(today), null);
+  if (saved) {
+    todayState = saved;
+  } else {
+    todayState = { morning: false, evening: false, catena: false, avemaria: false, rosary: 0 };
+  }
+  renderDailyUI();
+}
+
+function renderDailyUI() {
+  ['morning','evening','catena','avemaria'].forEach(k => {
+    document.getElementById('chk-'+k).classList.toggle('checked', !!todayState[k]);
+  });
+  document.getElementById('rosary-val').textContent = todayState.rosary;
+}
+
+function toggleCheck(key) {
+  todayState[key] = !todayState[key];
+  document.getElementById('chk-'+key).classList.toggle('checked', todayState[key]);
+}
+
+function changeRosary(delta) {
+  let v = (todayState.rosary || 0) + delta;
+  if (v < 0) v = 0;
+  if (v > 20) v = 20;
+  todayState.rosary = v;
+  document.getElementById('rosary-val').textContent = v;
+}
+
+function saveDaily() {
+  const today = new Date();
+  setStorage('daily_' + dateKey(today), todayState);
+  showToast('오늘 기록이 저장되었습니다 ✓');
+  renderHistory();
+}
+
+// ─── Weekly Tab ───────────────────────────────────────────────────
+function getWeekDates(offset) {
+  const today = new Date();
+  // Week starts Sunday
+  const day = today.getDay();
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - day + offset * 7);
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(sunday);
+    d.setDate(sunday.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+function getWeeklyData(dates) {
+  const data = {};
+  WEEK_ITEMS.forEach(item => { data[item.key] = {}; });
+  dates.forEach(d => {
+    const dk = dateKey(d);
+    const daily = getStorage('daily_' + dk, null);
+    // Merge daily checks into weekly
+    if (daily) {
+      if (daily.avemaria !== undefined) {
+        if (!data['avemaria']) data['avemaria'] = {};
+        data['avemaria'][dk] = daily.avemaria ? 1 : 0;
+      }
+      if (daily.rosary !== undefined) {
+        if (!data['rosary']) data['rosary'] = {};
+        data['rosary'][dk] = daily.rosary || 0;
+      }
+    }
+    // Load weekly-specific data
+    const weeklyDay = getStorage('weekly_' + dk, null);
+    if (weeklyDay) {
+      WEEK_ITEMS.forEach(item => {
+        if (weeklyDay[item.key] !== undefined) {
+          data[item.key][dk] = weeklyDay[item.key];
+        }
+      });
+    }
+  });
+  return data;
+}
+
+function saveWeeklyCell(dk, key, val) {
+  const existing = getStorage('weekly_' + dk, {});
+  existing[key] = val;
+  setStorage('weekly_' + dk, existing);
+  renderWeekSummary();
+}
+
+function renderWeeklyTab() {
+  const dates = getWeekDates(weekOffset);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+  const start = fmt(dates[0]), end = fmt(dates[6]);
+  const data = getWeeklyData(dates);
+
+  document.getElementById('week-label').textContent = `${start} ~ ${end}`;
+
+  // Headers
+  dates.forEach((d, i) => {
+    const th = document.getElementById('wh'+i);
+    th.innerHTML = `<span style="color:#888;font-size:0.65rem">${DAYS_KO[d.getDay()]}</span><br>${fmt(d)}`;
+  });
+
+  // Body
+  const tbody = document.getElementById('week-body');
+  tbody.innerHTML = '';
+  WEEK_ITEMS.forEach(item => {
+    const tr = document.createElement('tr');
+    const tdName = document.createElement('td');
+    tdName.className = 'item-name';
+    tdName.textContent = item.label;
+    tr.appendChild(tdName);
+
+    let sum = 0;
+    dates.forEach(d => {
+      const dk = dateKey(d);
+      const td = document.createElement('td');
+      const val = data[item.key][dk];
+
+      if (item.type === 'check') {
+        const checked = val ? true : false;
+        if (checked) sum++;
+        const btn = document.createElement('div');
+        btn.className = 'grid-check' + (checked ? ' checked' : '');
+        btn.onclick = () => {
+          const cur = btn.classList.contains('checked');
+          btn.classList.toggle('checked', !cur);
+          const existingDay = getStorage('weekly_' + dk, {});
+          existingDay[item.key] = !cur ? 1 : 0;
+          setStorage('weekly_' + dk, existingDay);
+          renderWeekSummary();
+        };
+        td.appendChild(btn);
+      } else if (item.type === 'check_page') {
+        // checkbox + page number input
+        const stored = val || { checked: false, page: '' };
+        const checked = stored.checked || false;
+        if (checked) sum++;
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px';
+        const btn = document.createElement('div');
+        btn.className = 'grid-check' + (checked ? ' checked' : '');
+        const pageInp = document.createElement('input');
+        pageInp.type = 'text';
+        pageInp.className = 'grid-num';
+        pageInp.style.width = '34px';
+        pageInp.placeholder = 'p';
+        pageInp.value = stored.page || '';
+        pageInp.maxLength = 4;
+        const save = () => {
+          const existingDay = getStorage('weekly_' + dk, {});
+          existingDay[item.key] = { checked: btn.classList.contains('checked'), page: pageInp.value };
+          setStorage('weekly_' + dk, existingDay);
+          renderWeekSummary();
+        };
+        btn.onclick = () => {
+          btn.classList.toggle('checked');
+          save();
+        };
+        pageInp.oninput = save;
+        wrap.appendChild(btn);
+        wrap.appendChild(pageInp);
+        td.appendChild(wrap);
+      } else {
+        // num input
+        const numVal = val || 0;
+        sum += Number(numVal);
+        const inp = document.createElement('input');
+        inp.type = 'number';
+        inp.className = 'grid-num';
+        inp.min = 0; inp.max = 99;
+        inp.value = numVal || '';
+        inp.placeholder = '0';
+        inp.oninput = () => {
+          const existingDay = getStorage('weekly_' + dk, {});
+          existingDay[item.key] = Number(inp.value) || 0;
+          setStorage('weekly_' + dk, existingDay);
+          renderWeekSummary();
+        };
+        td.appendChild(inp);
+      }
+      tr.appendChild(td);
+    });
+
+    const tdSum = document.createElement('td');
+    tdSum.className = 'sum-col';
+    tdSum.textContent = sum || '0';
+    tr.appendChild(tdSum);
+    tbody.appendChild(tr);
+  });
+
+  renderWeekSummary();
+}
+
+function renderWeekSummary() {
+  const dates = getWeekDates(weekOffset);
+  const data = getWeeklyData(dates);
+  const summaryEl = document.getElementById('weekly-summary');
+  summaryEl.innerHTML = '';
+
+  WEEK_ITEMS.forEach(item => {
+    let sum = 0;
+    dates.forEach(d => {
+      const v = data[item.key][dateKey(d)];
+      if (item.type === 'check') sum += v ? 1 : 0;
+      else if (item.type === 'check_page') sum += (v && v.checked) ? 1 : 0;
+      else sum += Number(v) || 0;
+    });
+    const unit = item.key === 'rosary' ? '단' : '회';
+    const div = document.createElement('div');
+    div.className = 'summary-item';
+    div.innerHTML = `<span>${item.label}</span><span class="s-val">${sum}${unit}</span>`;
+    summaryEl.appendChild(div);
+  });
+}
+
+function changeWeek(delta) {
+  weekOffset += delta;
+  renderWeeklyTab();
+}
+
+function copyReport() {
+  const dates = getWeekDates(weekOffset);
+  const data = getWeeklyData(dates);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}(${DAYS_KO[d.getDay()]})`;
+
+  let text = `[레지오 마리애 주간 보고]\n`;
+  text += `기간: ${fmt(dates[0])} ~ ${fmt(dates[6])}\n\n`;
+
+  WEEK_ITEMS.forEach(item => {
+    let sum = 0;
+    const pages = [];
+    dates.forEach(d => {
+      const v = data[item.key][dateKey(d)];
+      if (item.type === 'check') sum += v ? 1 : 0;
+      else if (item.type === 'check_page') {
+        if (v && v.checked) { sum++; if (v.page) pages.push(v.page); }
+      } else sum += Number(v) || 0;
+    });
+    const unit = item.type === 'rosary' ? '단' : '회';
+    const pageStr = pages.length ? ` (${pages.join(', ')})` : '';
+    text += `${item.label}: ${sum}${unit}${pageStr}\n`;
+  });
+
+  text += `\n생성: ${new Date().toLocaleDateString('ko-KR')}`;
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('보고 내용이 복사되었습니다 ✓'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('보고 내용이 복사되었습니다 ✓');
+  }
+}
+
+// ─── History Tab ──────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('daily_')) keys.push(k);
+  }
+  keys.sort().reverse();
+
+  if (keys.length === 0) {
+    list.innerHTML = '<div class="empty-msg">저장된 기록이 없습니다.</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  keys.forEach(k => {
+    const d = getStorage(k, {});
+    const dateStr = k.replace('daily_','');
+    const [y, m, day] = dateStr.split('-');
+    const dt = new Date(dateStr);
+    const dow = DAYS_KO[dt.getDay()];
+
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    const tags = [
+      { label: '아침기도', val: d.morning },
+      { label: '저녁기도', val: d.evening },
+      { label: '까떼나',   val: d.catena  },
+      { label: '주모경',   val: d.avemaria},
+    ];
+
+    let tagsHtml = tags.map(t =>
+      `<span class="history-tag ${t.val ? 'done' : ''}">${t.label}</span>`
+    ).join('');
+    if (d.rosary) {
+      tagsHtml += `<span class="history-tag done">묵주 ${d.rosary}단</span>`;
+    }
+
+    item.innerHTML = `
+      <div class="history-date">${y}년 ${parseInt(m)}월 ${parseInt(day)}일 (${dow})</div>
+      <div class="history-checks">${tagsHtml}</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+// ─── Tab switching ────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['daily','weekly','history'][i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name === 'weekly') renderWeeklyTab();
+  if (name === 'history') renderHistory();
+}
+
+// ─── Toast ────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── Init ─────────────────────────────────────────────────────────
+initDaily();
+</script>
+</body>
+</html>
