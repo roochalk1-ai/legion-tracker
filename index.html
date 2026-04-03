@@ -364,6 +364,40 @@
   }
   .grid-num:focus { border-color: #6e6b63; }
 
+  /* Grid stepper (+/- buttons) */
+  .grid-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1.5px solid #95c8cc;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .grid-step-btn {
+    width: 22px;
+    height: 26px;
+    border: none;
+    background: #6e6b63;
+    color: white;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+  }
+  .grid-step-btn:active { background: #4a4740; }
+  .grid-step-val {
+    width: 22px;
+    text-align: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #4a4740;
+    background: white;
+    padding: 4px 0;
+  }
+
   /* Summary card */
   .summary-card {
     background: linear-gradient(135deg, #e8e4dc, #d5d0c8);
@@ -770,22 +804,39 @@ function renderWeeklyTab() {
         wrap.appendChild(pageInp);
         td.appendChild(wrap);
       } else {
-        // num input
-        const numVal = val || 0;
-        sum += Number(numVal);
-        const inp = document.createElement('input');
-        inp.type = 'number';
-        inp.className = 'grid-num';
-        inp.min = 0; inp.max = 99;
-        inp.value = numVal || '';
-        inp.placeholder = '0';
-        inp.oninput = () => {
+        // stepper (+/-)
+        let numVal = Number(val) || 0;
+        sum += numVal;
+        const stepper = document.createElement('div');
+        stepper.className = 'grid-stepper';
+        const btnMinus = document.createElement('button');
+        btnMinus.className = 'grid-step-btn';
+        btnMinus.textContent = '−';
+        const valEl = document.createElement('div');
+        valEl.className = 'grid-step-val';
+        valEl.textContent = numVal || '0';
+        const btnPlus = document.createElement('button');
+        btnPlus.className = 'grid-step-btn';
+        btnPlus.textContent = '+';
+        const saveNum = (v) => {
+          valEl.textContent = v;
           const existingDay = getStorage('weekly_' + dk, {});
-          existingDay[item.key] = Number(inp.value) || 0;
+          existingDay[item.key] = v;
           setStorage('weekly_' + dk, existingDay);
           renderWeekSummary();
         };
-        td.appendChild(inp);
+        btnMinus.onclick = () => {
+          numVal = Math.max(0, numVal - 1);
+          saveNum(numVal);
+        };
+        btnPlus.onclick = () => {
+          numVal = Math.min(99, numVal + 1);
+          saveNum(numVal);
+        };
+        stepper.appendChild(btnMinus);
+        stepper.appendChild(valEl);
+        stepper.appendChild(btnPlus);
+        td.appendChild(stepper);
       }
       tr.appendChild(td);
     });
