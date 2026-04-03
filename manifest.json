@@ -2,10 +2,10 @@
   "name": "레지오 마리애 신앙생활 기록",
   "short_name": "레지오",
   "description": "레지오 마리애 단원을 위한 신앙생활 기록 앱",
-  "start_url": "/legion_tracker.html",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#faf4eb",
-  "theme_color": "#1a3a5c",
+  "background_color": "#e5e3de",
+  "theme_color": "#5d5a53",
   "orientation": "portrait",
   "icons": [
     {
