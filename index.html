@@ -499,6 +499,7 @@
   <button class="tab-btn active" onclick="switchTab('daily')">오늘 기록</button>
   <button class="tab-btn" onclick="switchTab('weekly')">주간 보고</button>
   <button class="tab-btn" onclick="switchTab('history')">기록 보기</button>
+  <button class="tab-btn" onclick="switchTab('settings')">설정</button>
 </div>
 
 <!-- ===== 오늘 기록 탭 ===== -->
@@ -583,6 +584,17 @@
 <div id="tab-history" class="tab-content">
   <div class="history-list" id="history-list">
     <div class="empty-msg">저장된 기록이 없습니다.</div>
+  </div>
+</div>
+
+<!-- ===== 설정 탭 ===== -->
+<div id="tab-settings" class="tab-content">
+  <div class="section-card">
+    <div class="section-title">주간 보고 시작 요일</div>
+    <p style="font-size:0.85rem;color:#7a7670;margin-bottom:14px;line-height:1.5">
+      단의 주회합 요일을 선택하면 그 날부터 한 주로 계산됩니다.
+    </p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="day-selector"></div>
   </div>
 </div>
 
@@ -679,14 +691,15 @@ function saveDaily() {
 // ─── Weekly Tab ───────────────────────────────────────────────────
 function getWeekDates(offset) {
   const today = new Date();
-  // Week starts Sunday
+  const startDay = getStorage('setting_weekStart', 0); // 0=일 기본값
   const day = today.getDay();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - day + offset * 7);
+  const diff = (day - startDay + 7) % 7;
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - diff + offset * 7);
   const dates = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(sunday);
-    d.setDate(sunday.getDate() + i);
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
     dates.push(d);
   }
   return dates;
@@ -964,15 +977,40 @@ function renderHistory() {
   });
 }
 
+// ─── Settings Tab ────────────────────────────────────────────────
+function renderSettings() {
+  const sel = document.getElementById('day-selector');
+  sel.innerHTML = '';
+  const current = getStorage('setting_weekStart', 0);
+  DAYS_KO.forEach((label, i) => {
+    const btn = document.createElement('button');
+    btn.textContent = label + '요일';
+    btn.style.cssText = `
+      padding: 8px 14px; border-radius: 20px; border: 2px solid #95c8cc;
+      font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      background: ${i === current ? '#6e6b63' : 'white'};
+      color: ${i === current ? 'white' : '#5d5a53'};
+      transition: all 0.15s;
+    `;
+    btn.onclick = () => {
+      setStorage('setting_weekStart', i);
+      renderSettings();
+      showToast(label + '요일부터 한 주 시작 ✓');
+    };
+    sel.appendChild(btn);
+  });
+}
+
 // ─── Tab switching ────────────────────────────────────────────────
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach((b,i) => {
-    b.classList.toggle('active', ['daily','weekly','history'][i] === name);
+    b.classList.toggle('active', ['daily','weekly','history','settings'][i] === name);
   });
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   if (name === 'weekly') renderWeeklyTab();
   if (name === 'history') renderHistory();
+  if (name === 'settings') renderSettings();
 }
 
 // ─── Toast ────────────────────────────────────────────────────────
