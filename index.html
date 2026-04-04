@@ -486,6 +486,27 @@
     background: #6e6b63;
     color: white;
   }
+  .history-item { position: relative; }
+  .delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background: #e0d8cf;
+    color: #8a8680;
+    font-size: 0.9rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .delete-btn:active { background: #c0b8ae; color: #5d5a53; }
+
   .empty-msg {
     text-align: center;
     color: #aaa;
@@ -1043,6 +1064,16 @@ function renderHistory() {
       <div class="history-date" style="color:#3a5a5c">📋 ${s._period} 주간 요약</div>
       <div class="history-checks" style="margin-top:6px">${rows}</div>
     `;
+    const delBtn1 = document.createElement('button');
+    delBtn1.className = 'delete-btn';
+    delBtn1.textContent = '×';
+    delBtn1.onclick = () => {
+      if (confirm('이 주간 요약을 삭제할까요?')) {
+        localStorage.removeItem(k);
+        renderHistory();
+      }
+    };
+    card.appendChild(delBtn1);
     list.appendChild(card);
   });
   dates.forEach(dateStr => {
@@ -1094,6 +1125,17 @@ function renderHistory() {
       <div class="history-checks">${tagsHtml}</div>
       ${weeklyHtml}${memoHtml}
     `;
+    const delBtn2 = document.createElement('button');
+    delBtn2.className = 'delete-btn';
+    delBtn2.textContent = '×';
+    delBtn2.onclick = () => {
+      if (confirm('이 날의 기록을 삭제할까요?')) {
+        localStorage.removeItem('daily_' + dateStr);
+        localStorage.removeItem('weekly_' + dateStr);
+        renderHistory();
+      }
+    };
+    item.appendChild(delBtn2);
     list.appendChild(item);
   });
 }
