@@ -584,6 +584,7 @@
     <div class="summary-grid" id="weekly-summary"></div>
   </div>
 
+  <button class="save-btn" onclick="saveWeeklySummary()" style="margin-bottom:6px">주간 요약 저장</button>
 </div>
 
 <!-- ===== 기록 보기 탭 ===== -->
@@ -628,7 +629,7 @@ const WEEK_ITEMS = [
   { key: 'bibleWrite',   label: '성경필사',      type: 'check'      },
   { key: 'meditation',   label: '말씀묵상',      type: 'check'      },
   { key: 'avemaria',     label: '주모경',        type: 'check'      },
-  { key: '_section',     label: '공동활동',      type: 'section'    },
+  { key: 'communal',     label: '공동활동',      type: 'check'      },
   { key: 'service',      label: '봉사',          type: 'num'        },
   { key: 'requiem',      label: '연도',          type: 'num'        },
   { key: 'memo',         label: '메모',          type: 'memo'       },
@@ -936,6 +937,29 @@ function changeWeek(delta) {
   renderWeeklyTab();
 }
 
+function saveWeeklySummary() {
+  const dates = getWeekDates(weekOffset);
+  const data = getWeeklyData(dates);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+  const weekKey = 'weeksummary_' + dateKey(dates[0]);
+  const summary = {};
+  WEEK_ITEMS.forEach(item => {
+    if (item.type === 'section' || item.type === 'memo') return;
+    let sum = 0;
+    dates.forEach(d => {
+      const v = data[item.key][dateKey(d)];
+      if (item.type === 'check') sum += v ? 1 : 0;
+      else if (item.type === 'check_page') sum += (v && v.checked) ? 1 : 0;
+      else sum += Number(v) || 0;
+    });
+    summary[item.key] = { label: item.label, val: sum, type: item.type };
+  });
+  summary._period = `${fmt(dates[0])} ~ ${fmt(dates[6])}`;
+  setStorage(weekKey, summary);
+  showToast('주간 요약이 저장되었습니다 ✓');
+  renderHistory();
+}
+
 function copyReport() {
   const dates = getWeekDates(weekOffset);
   const data = getWeeklyData(dates);
@@ -978,6 +1002,14 @@ function copyReport() {
 function renderHistory() {
   const list = document.getElementById('history-list');
 
+  // 주간 요약 카드 수집
+  const weekSummaries = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('weeksummary_')) weekSummaries.push(k);
+  }
+  weekSummaries.sort().reverse();
+
   // 날짜 키 수집 (daily + weekly)
   const dateSet = new Set();
   for (let i = 0; i < localStorage.length; i++) {
@@ -987,12 +1019,32 @@ function renderHistory() {
   }
   const dates = Array.from(dateSet).sort().reverse();
 
-  if (dates.length === 0) {
+  if (dates.length === 0 && weekSummaries.length === 0) {
     list.innerHTML = '<div class="empty-msg">저장된 기록이 없습니다.</div>';
     return;
   }
 
   list.innerHTML = '';
+
+  // 주간 요약 카드 먼저 렌더링
+  weekSummaries.forEach(k => {
+    const s = getStorage(k, {});
+    if (!s._period) return;
+    const card = document.createElement('div');
+    card.className = 'history-item';
+    card.style.borderLeft = '4px solid #95c8cc';
+    const rows = Object.entries(s)
+      .filter(([key]) => key !== '_period')
+      .map(([, v]) => {
+        const unit = v.type === 'num' && v.label === '묵주기도' ? '단' : '회';
+        return `<span class="history-tag ${v.val > 0 ? 'done' : ''}">${v.label} ${v.val}${unit}</span>`;
+      }).join('');
+    card.innerHTML = `
+      <div class="history-date" style="color:#3a5a5c">📋 ${s._period} 주간 요약</div>
+      <div class="history-checks" style="margin-top:6px">${rows}</div>
+    `;
+    list.appendChild(card);
+  });
   dates.forEach(dateStr => {
     const [y, m, day] = dateStr.split('-');
     const dt = new Date(dateStr);
