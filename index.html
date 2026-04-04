@@ -638,6 +638,12 @@
 <script>
 // ─── Data ─────────────────────────────────────────────────────────
 const MYSTERIES = ['영광의 신비','환희의 신비','고통의 신비','빛의 신비','고통의 신비','고통의 신비','환희의 신비'];
+const MYSTERY_LINKS = {
+  '환희의 신비': 'https://youtu.be/_meKvFVslYw?si=lj2xhGDdGidmArcE',
+  '고통의 신비': 'https://youtu.be/uMrhnr2uqD8?si=Rns1kU9T2pTujhae',
+  '영광의 신비': 'https://youtu.be/E7BDbrB3p78?si=Eg3v-7-vgVcLZx6O',
+  '빛의 신비':   'https://youtu.be/4PfHOkVchhE?si=Hg8dFL9lmWD18U5O',
+};
 // 0=일,1=월,2=화,3=수,4=목,5=금,6=토
 const MYSTERY_NAMES = {
   '환희의 신비': '환희의 신비 (기쁨)',
@@ -700,7 +706,11 @@ function renderDailyDate() {
     `${d.getFullYear()}년 ${months[d.getMonth()]} ${d.getDate()}일`;
   document.getElementById('today-weekday').textContent =
     (dailyOffset === 0 ? '오늘 · ' : dailyOffset === -1 ? '어제 · ' : '') + DAYS_KO[dow] + '요일';
-  document.getElementById('today-mystery').textContent = MYSTERIES[dow];
+  const mysteryName = MYSTERIES[dow];
+  document.getElementById('today-mystery').textContent = mysteryName;
+  const badge = document.getElementById('today-mystery').closest('.mystery-badge');
+  badge.style.cursor = 'pointer';
+  badge.onclick = () => window.open(MYSTERY_LINKS[mysteryName], '_blank');
 
   // 미래로는 이동 불가
   document.getElementById('btn-day-next').style.opacity = dailyOffset >= 0 ? '0.3' : '1';
