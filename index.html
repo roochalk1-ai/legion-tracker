@@ -874,7 +874,7 @@ function renderWeeklyTab() {
           const existingDay = getStorage('weekly_' + dk, {});
           existingDay[item.key] = !cur ? 1 : 0;
           setStorage('weekly_' + dk, existingDay);
-          renderWeekSummary();
+          updateRowSum(item.key);
         };
         td.appendChild(btn);
       } else if (item.type === 'check_page') {
@@ -897,7 +897,7 @@ function renderWeeklyTab() {
           const existingDay = getStorage('weekly_' + dk, {});
           existingDay[item.key] = { checked: btn.classList.contains('checked'), page: pageInp.value };
           setStorage('weekly_' + dk, existingDay);
-          renderWeekSummary();
+          updateRowSum(item.key);
         };
         btn.onclick = () => {
           btn.classList.toggle('checked');
@@ -927,7 +927,7 @@ function renderWeeklyTab() {
           const existingDay = getStorage('weekly_' + dk, {});
           existingDay[item.key] = v;
           setStorage('weekly_' + dk, existingDay);
-          renderWeekSummary();
+          updateRowSum(item.key);
         };
         btnMinus.onclick = () => {
           numVal = Math.max(0, numVal - 1);
@@ -947,11 +947,29 @@ function renderWeeklyTab() {
 
     const tdSum = document.createElement('td');
     tdSum.className = 'sum-col';
+    tdSum.id = 'sum-' + item.key;
     tdSum.textContent = sum || '0';
     tr.appendChild(tdSum);
     tbody.appendChild(tr);
   });
 
+  renderWeekSummary();
+}
+
+function updateRowSum(itemKey) {
+  const dates = getWeekDates(weekOffset);
+  const data = getWeeklyData(dates);
+  const item = WEEK_ITEMS.find(i => i.key === itemKey);
+  if (!item) return;
+  let sum = 0;
+  dates.forEach(d => {
+    const v = data[itemKey][dateKey(d)];
+    if (item.type === 'check') sum += v ? 1 : 0;
+    else if (item.type === 'check_page') sum += (v && v.checked) ? 1 : 0;
+    else sum += Number(v) || 0;
+  });
+  const cell = document.getElementById('sum-' + itemKey);
+  if (cell) cell.textContent = sum || '0';
   renderWeekSummary();
 }
 
