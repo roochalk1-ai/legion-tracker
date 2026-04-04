@@ -583,7 +583,6 @@
     <div class="summary-grid" id="weekly-summary"></div>
   </div>
 
-  <button class="copy-btn" onclick="copyReport()">📋 보고 내용 텍스트로 복사</button>
 </div>
 
 <!-- ===== 기록 보기 탭 ===== -->
@@ -619,17 +618,19 @@ const MYSTERY_NAMES = {
 };
 
 const WEEK_ITEMS = [
-  { key: 'weekdayMass',  label: '평일미사', type: 'check' },
-  { key: 'familyMass',   label: '가족미사', type: 'check' },
-  { key: 'familyPrayer', label: '가족기도', type: 'num'        },
-  { key: 'holyHour',     label: '성시간',   type: 'check'      },
-  { key: 'service',      label: '봉사',     type: 'num'        },
-  { key: 'requiem',      label: '연도',     type: 'num'        },
-  { key: 'manual',       label: '교본읽기', type: 'check_page' },
-  { key: 'rosary',       label: '묵주기도', type: 'num'   },
-  { key: 'bibleWrite',   label: '성경필사', type: 'check' },
-  { key: 'meditation',   label: '말씀묵상', type: 'check' },
-  { key: 'avemaria',     label: '주모경',   type: 'check' },
+  { key: 'weekdayMass',  label: '평일미사',      type: 'check'      },
+  { key: 'familyMass',   label: '가족미사',      type: 'check'      },
+  { key: 'familyPrayer', label: '가족기도',      type: 'num'        },
+  { key: 'holyHour',     label: '성시간/성모신심', type: 'check'    },
+  { key: 'manual',       label: '교본읽기',      type: 'check_page' },
+  { key: 'rosary',       label: '묵주기도',      type: 'num'        },
+  { key: 'bibleWrite',   label: '성경필사',      type: 'check'      },
+  { key: 'meditation',   label: '말씀묵상',      type: 'check'      },
+  { key: 'avemaria',     label: '주모경',        type: 'check'      },
+  { key: '_section',     label: '공동활동',      type: 'section'    },
+  { key: 'service',      label: '봉사',          type: 'num'        },
+  { key: 'requiem',      label: '연도',          type: 'num'        },
+  { key: 'memo',         label: '메모',          type: 'memo'       },
 ];
 
 const DAYS_KO = ['일','월','화','수','목','금','토'];
@@ -691,8 +692,9 @@ function changeRosary(delta) {
 function saveDaily() {
   const today = new Date();
   setStorage('daily_' + dateKey(today), todayState);
-  showToast('오늘 기록이 저장되었습니다 ✓');
   renderHistory();
+  switchTab('weekly');
+  showToast('저장되었습니다 ✓');
 }
 
 // ─── Weekly Tab ───────────────────────────────────────────────────
@@ -767,6 +769,40 @@ function renderWeeklyTab() {
   const tbody = document.getElementById('week-body');
   tbody.innerHTML = '';
   WEEK_ITEMS.forEach(item => {
+    // 섹션 구분행
+    if (item.type === 'section') {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 9;
+      td.style.cssText = 'background:#e5e3de;font-size:0.72rem;font-weight:700;color:#6e6b63;padding:6px 8px;letter-spacing:1px;position:sticky;left:0';
+      td.textContent = '― ' + item.label;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+    // 메모행 (주 단위 단일 칸)
+    if (item.type === 'memo') {
+      const weekKey = 'weekly_memo_' + dateKey(dates[0]);
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td');
+      tdName.className = 'item-name';
+      tdName.textContent = item.label;
+      tr.appendChild(tdName);
+      const td = document.createElement('td');
+      td.colSpan = 8;
+      td.style.padding = '4px 6px';
+      const inp = document.createElement('textarea');
+      inp.style.cssText = 'width:100%;border:1.5px solid #95c8cc;border-radius:8px;padding:6px 8px;font-size:0.82rem;color:#4a4740;resize:none;outline:none;background:white;font-family:inherit';
+      inp.rows = 2;
+      inp.placeholder = '자유롭게 메모...';
+      inp.value = getStorage(weekKey, '');
+      inp.oninput = () => setStorage(weekKey, inp.value);
+      td.appendChild(inp);
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+
     const tr = document.createElement('tr');
     const tdName = document.createElement('td');
     tdName.className = 'item-name';
@@ -878,6 +914,7 @@ function renderWeekSummary() {
   summaryEl.innerHTML = '';
 
   WEEK_ITEMS.forEach(item => {
+    if (item.type === 'section' || item.type === 'memo') return;
     let sum = 0;
     dates.forEach(d => {
       const v = data[item.key][dateKey(d)];
@@ -939,46 +976,70 @@ function copyReport() {
 // ─── History Tab ──────────────────────────────────────────────────
 function renderHistory() {
   const list = document.getElementById('history-list');
-  const keys = [];
+
+  // 날짜 키 수집 (daily + weekly)
+  const dateSet = new Set();
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
-    if (k && k.startsWith('daily_')) keys.push(k);
+    if (k && k.startsWith('daily_')) dateSet.add(k.replace('daily_',''));
+    if (k && k.startsWith('weekly_') && !k.startsWith('weekly_memo_')) dateSet.add(k.replace('weekly_',''));
   }
-  keys.sort().reverse();
+  const dates = Array.from(dateSet).sort().reverse();
 
-  if (keys.length === 0) {
+  if (dates.length === 0) {
     list.innerHTML = '<div class="empty-msg">저장된 기록이 없습니다.</div>';
     return;
   }
 
   list.innerHTML = '';
-  keys.forEach(k => {
-    const d = getStorage(k, {});
-    const dateStr = k.replace('daily_','');
+  dates.forEach(dateStr => {
     const [y, m, day] = dateStr.split('-');
     const dt = new Date(dateStr);
     const dow = DAYS_KO[dt.getDay()];
+    const d = getStorage('daily_' + dateStr, {});
+    const w = getStorage('weekly_' + dateStr, {});
 
     const item = document.createElement('div');
     item.className = 'history-item';
 
-    const tags = [
+    // 개인 기도 태그
+    const dailyTags = [
       { label: '아침기도', val: d.morning },
       { label: '저녁기도', val: d.evening },
       { label: '까떼나',   val: d.catena  },
       { label: '주모경',   val: d.avemaria},
     ];
-
-    let tagsHtml = tags.map(t =>
+    let tagsHtml = dailyTags.map(t =>
       `<span class="history-tag ${t.val ? 'done' : ''}">${t.label}</span>`
     ).join('');
-    if (d.rosary) {
-      tagsHtml += `<span class="history-tag done">묵주 ${d.rosary}단</span>`;
-    }
+    if (d.rosary) tagsHtml += `<span class="history-tag done">묵주 ${d.rosary}단</span>`;
+
+    // 주간보고 항목
+    const weeklyLines = [];
+    WEEK_ITEMS.forEach(it => {
+      if (it.type === 'section' || it.type === 'memo') return;
+      const v = w[it.key];
+      if (!v) return;
+      if (it.type === 'check' && v) weeklyLines.push(it.label);
+      else if (it.type === 'check_page' && v && v.checked) weeklyLines.push(it.label + (v.page ? ' ' + v.page : ''));
+      else if (it.type === 'num' && Number(v) > 0) weeklyLines.push(it.label + ' ' + v + '회');
+    });
+    const weeklyHtml = weeklyLines.length
+      ? `<div style="margin-top:6px;font-size:0.78rem;color:#6e6b63">${weeklyLines.join(' · ')}</div>`
+      : '';
+
+    // 메모
+    const memoKey = 'weekly_memo_' + dateStr;
+    // find week start for this date
+    const memoVal = getStorage(memoKey, '');
+    const memoHtml = memoVal
+      ? `<div style="margin-top:5px;font-size:0.78rem;color:#8a8680;font-style:italic">"${memoVal}"</div>`
+      : '';
 
     item.innerHTML = `
       <div class="history-date">${y}년 ${parseInt(m)}월 ${parseInt(day)}일 (${dow})</div>
       <div class="history-checks">${tagsHtml}</div>
+      ${weeklyHtml}${memoHtml}
     `;
     list.appendChild(item);
   });
