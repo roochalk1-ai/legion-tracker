@@ -532,9 +532,15 @@
 <!-- ===== 오늘 기록 탭 ===== -->
 <div id="tab-daily" class="tab-content active">
   <div class="date-card">
-    <div class="date-main" id="today-date"></div>
-    <div class="date-day" id="today-weekday"></div>
-    <div><span class="mystery-badge"><span class="mystery-icon">📿</span><span id="today-mystery"></span></span></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <button class="week-nav-btn" onclick="changeDay(-1)">&#8249;</button>
+      <div style="text-align:center">
+        <div class="date-main" id="today-date"></div>
+        <div class="date-day" id="today-weekday"></div>
+      </div>
+      <button class="week-nav-btn" id="btn-day-next" onclick="changeDay(1)">&#8250;</button>
+    </div>
+    <div style="text-align:center"><span class="mystery-badge"><span class="mystery-icon">📿</span><span id="today-mystery"></span></span></div>
   </div>
 
   <div class="section-card">
@@ -661,6 +667,13 @@ const DAYS_KO = ['일','월','화','수','목','금','토'];
 // ─── State ────────────────────────────────────────────────────────
 let todayState = { morning: false, evening: false, catena: false, avemaria: false, rosary: 0 };
 let weekOffset = 0; // 0 = this week
+let dailyOffset = 0; // 0 = 오늘, -1 = 어제, ...
+
+function getOffsetDate(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d;
+}
 
 function getStorage(key, def) {
   try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; }
@@ -675,21 +688,33 @@ function dateKey(d) {
 }
 
 function initDaily() {
-  const today = new Date();
-  const dow = today.getDay();
+  dailyOffset = 0;
+  renderDailyDate();
+}
+
+function renderDailyDate() {
+  const d = getOffsetDate(dailyOffset);
+  const dow = d.getDay();
   const months = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
   document.getElementById('today-date').textContent =
-    `${today.getFullYear()}년 ${months[today.getMonth()]} ${today.getDate()}일`;
-  document.getElementById('today-weekday').textContent = `${DAYS_KO[dow]}요일`;
+    `${d.getFullYear()}년 ${months[d.getMonth()]} ${d.getDate()}일`;
+  document.getElementById('today-weekday').textContent =
+    (dailyOffset === 0 ? '오늘 · ' : dailyOffset === -1 ? '어제 · ' : '') + DAYS_KO[dow] + '요일';
   document.getElementById('today-mystery').textContent = MYSTERIES[dow];
 
-  const saved = getStorage('daily_' + dateKey(today), null);
-  if (saved) {
-    todayState = saved;
-  } else {
-    todayState = { morning: false, evening: false, catena: false, avemaria: false, rosary: 0 };
-  }
+  // 미래로는 이동 불가
+  document.getElementById('btn-day-next').style.opacity = dailyOffset >= 0 ? '0.3' : '1';
+  document.getElementById('btn-day-next').disabled = dailyOffset >= 0;
+
+  const saved = getStorage('daily_' + dateKey(d), null);
+  todayState = saved || { morning: false, evening: false, catena: false, avemaria: false, rosary: 0 };
   renderDailyUI();
+}
+
+function changeDay(delta) {
+  if (dailyOffset + delta > 0) return;
+  dailyOffset += delta;
+  renderDailyDate();
 }
 
 function renderDailyUI() {
@@ -713,8 +738,8 @@ function changeRosary(delta) {
 }
 
 function saveDaily() {
-  const today = new Date();
-  setStorage('daily_' + dateKey(today), todayState);
+  const d = getOffsetDate(dailyOffset);
+  setStorage('daily_' + dateKey(d), todayState);
   renderHistory();
   switchTab('weekly');
   showToast('저장되었습니다 ✓');
