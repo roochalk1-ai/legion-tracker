@@ -513,6 +513,30 @@
     font-size: 0.9rem;
     padding: 40px 0;
   }
+
+  /* Mystery select buttons */
+  .mystery-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  .mystery-sel-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 2px solid #95c8cc;
+    background: white;
+    color: #3a5a5c;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .mystery-sel-btn:active {
+    background: #95c8cc;
+    color: white;
+  }
 </style>
 </head>
 <body>
@@ -541,6 +565,12 @@
       <button class="week-nav-btn" id="btn-day-next" onclick="changeDay(1)">&#8250;</button>
     </div>
     <div style="text-align:center"><span class="mystery-badge"><span class="mystery-icon">📿</span><span id="today-mystery"></span></span></div>
+    <div class="mystery-select">
+      <button class="mystery-sel-btn" onclick="window.open(MYSTERY_LINKS['환희의 신비'],'_blank')">환희의 신비</button>
+      <button class="mystery-sel-btn" onclick="window.open(MYSTERY_LINKS['고통의 신비'],'_blank')">고통의 신비</button>
+      <button class="mystery-sel-btn" onclick="window.open(MYSTERY_LINKS['영광의 신비'],'_blank')">영광의 신비</button>
+      <button class="mystery-sel-btn" onclick="window.open(MYSTERY_LINKS['빛의 신비'],'_blank')">빛의 신비</button>
+    </div>
   </div>
 
   <div class="section-card">
@@ -658,11 +688,14 @@ const WEEK_ITEMS = [
   { key: 'familyMass',   label: '가족미사',      type: 'check'      },
   { key: 'familyPrayer', label: '가족기도',      type: 'num'        },
   { key: 'holyHour',     label: '성시간/성모신심', type: 'check'    },
-  { key: 'manual',       label: '교본읽기',      type: 'check_page' },
+  { key: 'morning',      label: '아침기도',      type: 'check', fromDaily: true },
+  { key: 'evening',      label: '저녁기도',      type: 'check', fromDaily: true },
+  { key: 'catena',       label: '까떼나',        type: 'check', fromDaily: true },
+  { key: 'avemaria',     label: '주모경',        type: 'check', fromDaily: true },
+  { key: 'manual',       label: '교본읽기',      type: 'num'        },
   { key: 'rosary',       label: '묵주기도',      type: 'num'        },
   { key: 'bibleWrite',   label: '성경필사',      type: 'check'      },
   { key: 'meditation',   label: '말씀묵상',      type: 'check'      },
-  { key: 'avemaria',     label: '주모경',        type: 'check'      },
   { key: 'communal',     label: '공동활동',      type: 'check'      },
   { key: 'service',      label: '봉사',          type: 'num'        },
   { key: 'requiem',      label: '연도',          type: 'num'        },
@@ -738,6 +771,9 @@ function renderDailyUI() {
 function toggleCheck(key) {
   todayState[key] = !todayState[key];
   document.getElementById('chk-'+key).classList.toggle('checked', todayState[key]);
+  // 기도 체크는 즉시 자동 저장
+  const d = getOffsetDate(dailyOffset);
+  setStorage('daily_' + dateKey(d), todayState);
 }
 
 function changeRosary(delta) {
@@ -781,10 +817,12 @@ function getWeeklyData(dates) {
     const daily = getStorage('daily_' + dk, null);
     // Merge daily checks into weekly
     if (daily) {
-      if (daily.avemaria !== undefined) {
-        if (!data['avemaria']) data['avemaria'] = {};
-        data['avemaria'][dk] = daily.avemaria ? 1 : 0;
-      }
+      ['morning','evening','catena','avemaria'].forEach(k => {
+        if (daily[k] !== undefined) {
+          if (!data[k]) data[k] = {};
+          data[k][dk] = daily[k] ? 1 : 0;
+        }
+      });
       if (daily.rosary !== undefined) {
         if (!data['rosary']) data['rosary'] = {};
         data['rosary'][dk] = daily.rosary || 0;
@@ -999,7 +1037,7 @@ function renderWeekSummary() {
       else if (item.type === 'check_page') sum += (v && v.checked) ? 1 : 0;
       else sum += Number(v) || 0;
     });
-    const unit = item.key === 'rosary' ? '단' : '회';
+    const unit = item.key === 'rosary' ? '단' : item.key === 'manual' ? '쪽' : '회';
     const div = document.createElement('div');
     div.className = 'summary-item';
     div.innerHTML = `<span>${item.label}</span><span class="s-val">${sum}${unit}</span>`;
@@ -1053,7 +1091,7 @@ function copyReport() {
         if (v && v.checked) { sum++; if (v.page) pages.push(v.page); }
       } else sum += Number(v) || 0;
     });
-    const unit = item.type === 'rosary' ? '단' : '회';
+    const unit = item.key === 'rosary' ? '단' : item.key === 'manual' ? '쪽' : '회';
     const pageStr = pages.length ? ` (${pages.join(', ')})` : '';
     text += `${item.label}: ${sum}${unit}${pageStr}\n`;
   });
@@ -1111,7 +1149,7 @@ function renderHistory() {
     const rows = Object.entries(s)
       .filter(([key]) => key !== '_period')
       .map(([, v]) => {
-        const unit = v.type === 'num' && v.label === '묵주기도' ? '단' : '회';
+        const unit = v.label === '묵주기도' ? '단' : v.label === '교본읽기' ? '쪽' : '회';
         return `<span class="history-tag ${v.val > 0 ? 'done' : ''}">${v.label} ${v.val}${unit}</span>`;
       }).join('');
     card.innerHTML = `
@@ -1155,12 +1193,14 @@ function renderHistory() {
     // 주간보고 항목
     const weeklyLines = [];
     WEEK_ITEMS.forEach(it => {
-      if (it.type === 'section' || it.type === 'memo') return;
+      if (it.type === 'section' || it.type === 'memo' || it.fromDaily) return;
       const v = w[it.key];
       if (!v) return;
       if (it.type === 'check' && v) weeklyLines.push(it.label);
-      else if (it.type === 'check_page' && v && v.checked) weeklyLines.push(it.label + (v.page ? ' ' + v.page : ''));
-      else if (it.type === 'num' && Number(v) > 0) weeklyLines.push(it.label + ' ' + v + '회');
+      else if (it.type === 'num' && Number(v) > 0) {
+        const unit = it.key === 'rosary' ? '단' : it.key === 'manual' ? '쪽' : '회';
+        weeklyLines.push(it.label + ' ' + v + unit);
+      }
     });
     const weeklyHtml = weeklyLines.length
       ? `<div style="margin-top:6px;font-size:0.78rem;color:#6e6b63">${weeklyLines.join(' · ')}</div>`
