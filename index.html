@@ -688,10 +688,7 @@ const WEEK_ITEMS = [
   { key: 'familyMass',   label: '가족미사',      type: 'check'      },
   { key: 'familyPrayer', label: '가족기도',      type: 'num'        },
   { key: 'holyHour',     label: '성시간/성모신심', type: 'check'    },
-  { key: 'morning',      label: '아침기도',      type: 'check', fromDaily: true },
-  { key: 'evening',      label: '저녁기도',      type: 'check', fromDaily: true },
-  { key: 'catena',       label: '까떼나',        type: 'check', fromDaily: true },
-  { key: 'avemaria',     label: '주모경',        type: 'check', fromDaily: true },
+  { key: 'avemaria',     label: '9시 주모경',    type: 'check', fromDaily: true },
   { key: 'manual',       label: '교본읽기',      type: 'num'        },
   { key: 'rosary',       label: '묵주기도',      type: 'num'        },
   { key: 'bibleWrite',   label: '성경필사',      type: 'check'      },
@@ -817,12 +814,10 @@ function getWeeklyData(dates) {
     const daily = getStorage('daily_' + dk, null);
     // Merge daily checks into weekly
     if (daily) {
-      ['morning','evening','catena','avemaria'].forEach(k => {
-        if (daily[k] !== undefined) {
-          if (!data[k]) data[k] = {};
-          data[k][dk] = daily[k] ? 1 : 0;
-        }
-      });
+      if (daily.avemaria !== undefined) {
+        if (!data['avemaria']) data['avemaria'] = {};
+        data['avemaria'][dk] = daily.avemaria ? 1 : 0;
+      }
       if (daily.rosary !== undefined) {
         if (!data['rosary']) data['rosary'] = {};
         data['rosary'][dk] = daily.rosary || 0;
@@ -1067,6 +1062,16 @@ function saveWeeklySummary() {
     });
     summary[item.key] = { label: item.label, val: sum, type: item.type };
   });
+  // 아침기도/저녁기도/까떼나 일주일 합계 (daily에서 직접 집계)
+  const prayerKeys = { morning: '아침기도', evening: '저녁기도', catena: '까떼나' };
+  Object.entries(prayerKeys).forEach(([k, label]) => {
+    let count = 0;
+    dates.forEach(d => {
+      const daily = getStorage('daily_' + dateKey(d), null);
+      if (daily && daily[k]) count++;
+    });
+    summary[k] = { label, val: count, type: 'check' };
+  });
   summary._period = `${fmt(dates[0])} ~ ${fmt(dates[6])}`;
   setStorage(weekKey, summary);
   showToast('주간 요약이 저장되었습니다 ✓');
@@ -1180,10 +1185,7 @@ function renderHistory() {
 
     // 개인 기도 태그
     const dailyTags = [
-      { label: '아침기도', val: d.morning },
-      { label: '저녁기도', val: d.evening },
-      { label: '까떼나',   val: d.catena  },
-      { label: '주모경',   val: d.avemaria},
+      { label: '9시 주모경', val: d.avemaria },
     ];
     let tagsHtml = dailyTags.map(t =>
       `<span class="history-tag ${t.val ? 'done' : ''}">${t.label}</span>`
