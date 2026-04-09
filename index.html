@@ -531,7 +531,10 @@
     overflow: hidden;
     transition: max-height 0.3s ease;
   }
-  .prayer-text.open { max-height: 600px; }
+  .prayer-text.open {
+    max-height: 420px;
+    overflow-y: auto;
+  }
   .prayer-text-inner {
     padding: 10px 14px 14px;
     font-size: 0.88rem;
@@ -660,7 +663,8 @@
         <div class="custom-check" id="chk-catena" onclick="event.stopPropagation();toggleCheck('catena')"></div>
       </div>
       <div class="prayer-text" id="prayer-catena">
-        <div class="prayer-text-inner">◎ 〈후렴〉 먼동이 트이듯 나타나고,
+        <div class="prayer-text-inner">◎ 〈후렴〉
+먼동이 트이듯 나타나고,
 달과 같이 아름답고,
 해와 같이 빛나며,
 진을 친 군대처럼 두려운
@@ -688,7 +692,8 @@
 ○ 처음과 같이 이제와 항상 영원히.
 ◎ 아멘.
 
-◎ 〈후렴〉 먼동이 트이듯 나타나고,
+◎ 〈후렴〉
+먼동이 트이듯 나타나고,
 달과 같이 아름답고,
 해와 같이 빛나며,
 진을 친 군대처럼 두려운
