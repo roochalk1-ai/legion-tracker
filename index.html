@@ -719,6 +719,11 @@
       <div class="check-label"><span class="icon">🙏</span> 9시 주모경</div>
       <div class="custom-check" id="chk-avemaria" onclick="toggleCheck('avemaria')"></div>
     </div>
+
+    <div class="check-row">
+      <div class="check-label"><span class="icon">🤝</span> 공동배당활동</div>
+      <div class="custom-check" id="chk-assignment" onclick="toggleCheck('assignment')"></div>
+    </div>
   </div>
 
   <div class="section-card">
@@ -817,7 +822,7 @@ const WEEK_ITEMS = [
   { key: 'familyPrayer', label: '가족기도',      type: 'num'        },
   { key: 'holyHour',     label: '성시간/성모신심', type: 'check'    },
   { key: 'avemaria',     label: '9시 주모경',    type: 'check', fromDaily: true },
-  { key: 'manual',       label: '교본읽기',      type: 'num'        },
+  { key: 'manual',       label: '교본읽기',      type: 'text'       },
   { key: 'rosary',       label: '묵주기도',      type: 'num'        },
   { key: 'bibleWrite',   label: '성경필사',      type: 'check'      },
   { key: 'meditation',   label: '말씀묵상',      type: 'check'      },
@@ -830,7 +835,7 @@ const WEEK_ITEMS = [
 const DAYS_KO = ['일','월','화','수','목','금','토'];
 
 // ─── State ────────────────────────────────────────────────────────
-let todayState = { morning: false, evening: false, catena: false, avemaria: false, rosary: 0 };
+let todayState = { morning: false, evening: false, catena: false, avemaria: false, assignment: false, rosary: 0 };
 let weekOffset = 0; // 0 = this week
 let dailyOffset = 0; // 0 = 오늘, -1 = 어제, ...
 
@@ -879,7 +884,7 @@ function renderDailyDate() {
   document.getElementById('btn-day-next').disabled = dailyOffset >= 0;
 
   const saved = getStorage('daily_' + dateKey(d), null);
-  todayState = saved || { morning: false, evening: false, catena: false, avemaria: false, rosary: 0 };
+  todayState = saved || { morning: false, evening: false, catena: false, avemaria: false, assignment: false, rosary: 0 };
   renderDailyUI();
 }
 
@@ -890,7 +895,7 @@ function changeDay(delta) {
 }
 
 function renderDailyUI() {
-  ['morning','evening','catena','avemaria'].forEach(k => {
+  ['morning','evening','catena','avemaria','assignment'].forEach(k => {
     document.getElementById('chk-'+k).classList.toggle('checked', !!todayState[k]);
   });
   document.getElementById('rosary-val').textContent = todayState.rosary;
@@ -1119,6 +1124,22 @@ function renderWeeklyTab() {
         wrap.appendChild(btn);
         wrap.appendChild(pageInp);
         td.appendChild(wrap);
+      } else if (item.type === 'text') {
+        // 자유 텍스트 입력 (예: 교본읽기 쪽수)
+        if (val && String(val).trim()) sum++;
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.className = 'grid-num';
+        inp.style.width = '52px';
+        inp.placeholder = '쪽';
+        inp.value = val || '';
+        inp.oninput = () => {
+          const existingDay = getStorage('weekly_' + dk, {});
+          existingDay[item.key] = inp.value;
+          setStorage('weekly_' + dk, existingDay);
+          updateRowSum(item.key);
+        };
+        td.appendChild(inp);
       } else {
         // stepper (+/-)
         let numVal = Number(val) || 0;
@@ -1178,11 +1199,23 @@ function updateRowSum(itemKey) {
     const v = data[itemKey][dateKey(d)];
     if (item.type === 'check') sum += v ? 1 : 0;
     else if (item.type === 'check_page') sum += (v && v.checked) ? 1 : 0;
+    else if (item.type === 'text') sum += (v && String(v).trim()) ? 1 : 0;
     else sum += Number(v) || 0;
   });
   const cell = document.getElementById('sum-' + itemKey);
   if (cell) cell.textContent = sum || '0';
   renderWeekSummary();
+}
+
+// 한 주 동안 입력된 텍스트 값들을 모아 ", "로 연결 (예: 교본읽기 쪽수)
+function joinTextVals(itemKey, dates) {
+  const vals = [];
+  dates.forEach(d => {
+    const day = getStorage('weekly_' + dateKey(d), null);
+    const v = day && day[itemKey];
+    if (v && String(v).trim()) vals.push(String(v).trim());
+  });
+  return vals.join(', ');
 }
 
 function renderWeekSummary() {
@@ -1193,6 +1226,14 @@ function renderWeekSummary() {
 
   WEEK_ITEMS.forEach(item => {
     if (item.type === 'section' || item.type === 'memo') return;
+    const div = document.createElement('div');
+    div.className = 'summary-item';
+    if (item.type === 'text') {
+      const txt = joinTextVals(item.key, dates);
+      div.innerHTML = `<span>${item.label}</span><span class="s-val">${txt || '-'}</span>`;
+      summaryEl.appendChild(div);
+      return;
+    }
     let sum = 0;
     dates.forEach(d => {
       const v = data[item.key][dateKey(d)];
@@ -1200,9 +1241,7 @@ function renderWeekSummary() {
       else if (item.type === 'check_page') sum += (v && v.checked) ? 1 : 0;
       else sum += Number(v) || 0;
     });
-    const unit = item.key === 'rosary' ? '단' : item.key === 'manual' ? '쪽' : '회';
-    const div = document.createElement('div');
-    div.className = 'summary-item';
+    const unit = item.key === 'rosary' ? '단' : '회';
     div.innerHTML = `<span>${item.label}</span><span class="s-val">${sum}${unit}</span>`;
     summaryEl.appendChild(div);
   });
@@ -1221,6 +1260,10 @@ function saveWeeklySummary() {
   const summary = {};
   WEEK_ITEMS.forEach(item => {
     if (item.type === 'section' || item.type === 'memo') return;
+    if (item.type === 'text') {
+      summary[item.key] = { label: item.label, val: joinTextVals(item.key, dates), type: 'text' };
+      return;
+    }
     let sum = 0;
     dates.forEach(d => {
       const v = data[item.key][dateKey(d)];
@@ -1255,6 +1298,12 @@ function copyReport() {
   text += `기간: ${fmt(dates[0])} ~ ${fmt(dates[6])}\n\n`;
 
   WEEK_ITEMS.forEach(item => {
+    if (item.type === 'section' || item.type === 'memo') return;
+    if (item.type === 'text') {
+      const txt = joinTextVals(item.key, dates);
+      text += `${item.label}: ${txt || '없음'}\n`;
+      return;
+    }
     let sum = 0;
     const pages = [];
     dates.forEach(d => {
@@ -1264,7 +1313,7 @@ function copyReport() {
         if (v && v.checked) { sum++; if (v.page) pages.push(v.page); }
       } else sum += Number(v) || 0;
     });
-    const unit = item.key === 'rosary' ? '단' : item.key === 'manual' ? '쪽' : '회';
+    const unit = item.key === 'rosary' ? '단' : '회';
     const pageStr = pages.length ? ` (${pages.join(', ')})` : '';
     text += `${item.label}: ${sum}${unit}${pageStr}\n`;
   });
@@ -1327,8 +1376,14 @@ function renderHistory() {
     // 주간보고 태그
     WEEKLY_ORDER.forEach(it => {
       const v = s[it.key];
-      if (!v || v.val === 0 || v.val === undefined) return;
-      const unit = it.key === 'rosary' ? '단' : it.key === 'manual' ? '쪽' : '회';
+      if (!v) return;
+      if (it.type === 'text') {
+        if (!v.val || !String(v.val).trim()) return;
+        tags.push(`<span class="history-tag done">${it.label} ${v.val}</span>`);
+        return;
+      }
+      if (v.val === 0 || v.val === undefined) return;
+      const unit = it.key === 'rosary' ? '단' : '회';
       tags.push(`<span class="history-tag done">${it.label} ${v.val}${unit}</span>`);
     });
 
