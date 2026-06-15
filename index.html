@@ -514,6 +514,81 @@
     padding: 40px 0;
   }
 
+  /* History filter buttons */
+  .history-filter-btn {
+    flex: 1;
+    padding: 8px 0;
+    border-radius: 20px;
+    border: 2px solid #6e6b63;
+    background: white;
+    color: #6e6b63;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .history-filter-btn.active {
+    background: #6e6b63;
+    color: white;
+  }
+
+  /* Monthly / yearly summary cards */
+  .agg-card {
+    background: white;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+  .agg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .agg-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #3a5a5c;
+  }
+  .agg-arrow {
+    font-size: 0.8rem;
+    color: #95c8cc;
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+  .agg-arrow.open { transform: rotate(180deg); }
+  .agg-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .agg-body.open { max-height: 600px; }
+  .agg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .agg-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #444;
+    padding: 5px 8px;
+    background: #f5f3ee;
+    border-radius: 8px;
+  }
+  .agg-item .av {
+    font-weight: 700;
+    color: #3a5a5c;
+  }
+  .agg-weeks {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 6px;
+  }
+
   /* Collapsible prayer text */
   .prayer-expandable { border-bottom: 1px solid #f0ebe4; }
   .prayer-expandable:last-child { border-bottom: none; }
@@ -779,6 +854,11 @@
 
 <!-- ===== 기록 보기 탭 ===== -->
 <div id="tab-history" class="tab-content">
+  <div style="display:flex;gap:6px;margin-bottom:12px">
+    <button class="history-filter-btn active" onclick="setHistoryView('week')">주간</button>
+    <button class="history-filter-btn" onclick="setHistoryView('month')">월간</button>
+    <button class="history-filter-btn" onclick="setHistoryView('year')">연간</button>
+  </div>
   <div class="history-list" id="history-list">
     <div class="empty-msg">저장된 기록이 없습니다.</div>
   </div>
@@ -1350,7 +1430,47 @@ function renderHistory() {
     return;
   }
 
-  // 표시 순서: 기도 먼저, 그 다음 WEEK_ITEMS 순서
+  list.innerHTML = '';
+
+  // ── 월간 합산 뷰 ──
+  if (historyView === 'month') {
+    // 월 기준으로 그룹핑 (키가 weeksummary_YYYY-MM-DD 형태)
+    const monthMap = {};
+    weekKeys.forEach(k => {
+      const dateStr = k.replace('weeksummary_', ''); // YYYY-MM-DD
+      const ym = dateStr.slice(0, 7); // YYYY-MM
+      if (!monthMap[ym]) monthMap[ym] = [];
+      monthMap[ym].push(k);
+    });
+    const months = Object.keys(monthMap).sort().reverse();
+    months.forEach((ym, idx) => {
+      const [y, m] = ym.split('-');
+      const title = `${y}년 ${parseInt(m)}월`;
+      const card = renderAggCard(title, monthMap[ym], idx === 0);
+      if (card) list.appendChild(card);
+    });
+    return;
+  }
+
+  // ── 연간 합산 뷰 ──
+  if (historyView === 'year') {
+    const yearMap = {};
+    weekKeys.forEach(k => {
+      const dateStr = k.replace('weeksummary_', '');
+      const y = dateStr.slice(0, 4);
+      if (!yearMap[y]) yearMap[y] = [];
+      yearMap[y].push(k);
+    });
+    const years = Object.keys(yearMap).sort().reverse();
+    years.forEach((y, idx) => {
+      const title = `${y}년`;
+      const card = renderAggCard(title, yearMap[y], idx === 0);
+      if (card) list.appendChild(card);
+    });
+    return;
+  }
+
+  // ── 주간 뷰 (기존) ──
   const PRAYER_ORDER = [
     { key: 'morning', label: '아침기도' },
     { key: 'evening', label: '저녁기도' },
@@ -1358,7 +1478,6 @@ function renderHistory() {
   ];
   const WEEKLY_ORDER = WEEK_ITEMS.filter(it => it.type !== 'memo');
 
-  list.innerHTML = '';
   weekKeys.forEach(k => {
     const s = getStorage(k, {});
     if (!s._period) return;
@@ -1368,12 +1487,10 @@ function renderHistory() {
     card.style.borderLeft = '4px solid #95c8cc';
 
     const tags = [];
-    // 기도 태그 (아침/저녁/까떼나)
     PRAYER_ORDER.forEach(({ key, label }) => {
       const v = s[key];
       if (v && v.val > 0) tags.push(`<span class="history-tag done">${label} ${v.val}회</span>`);
     });
-    // 주간보고 태그
     WEEKLY_ORDER.forEach(it => {
       const v = s[it.key];
       if (!v) return;
@@ -1403,6 +1520,96 @@ function renderHistory() {
     card.appendChild(delBtn);
     list.appendChild(card);
   });
+}
+
+// ─── History Tab ─────────────────────────────────────────────────
+let historyView = 'week';
+
+function setHistoryView(v) {
+  historyView = v;
+  document.querySelectorAll('.history-filter-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['week','month','year'][i] === v);
+  });
+  renderHistory();
+}
+
+function aggregateWeeks(weekKeys) {
+  const PRAYER_KEYS = ['morning','evening','catena'];
+  const totals = {};
+  PRAYER_KEYS.forEach(k => { totals[k] = 0; });
+  WEEK_ITEMS.forEach(it => {
+    if (it.type === 'memo') return;
+    totals[it.key] = 0;
+  });
+
+  let count = 0;
+  weekKeys.forEach(k => {
+    const s = getStorage(k, {});
+    if (!s._period) return;
+    count++;
+    PRAYER_KEYS.forEach(pk => {
+      totals[pk] += (s[pk]?.val || 0);
+    });
+    WEEK_ITEMS.forEach(it => {
+      if (it.type === 'memo') return;
+      const v = s[it.key]?.val;
+      if (!v) return;
+      if (it.type === 'check') totals[it.key] += (v ? 1 : 0);
+      else if (it.type === 'num') totals[it.key] += (Number(v) || 0);
+    });
+  });
+  return { totals, count };
+}
+
+function renderAggCard(title, weekKeys, openByDefault) {
+  const { totals, count } = aggregateWeeks(weekKeys);
+  if (count === 0) return null;
+
+  const PRAYER_ORDER = [
+    { key: 'morning', label: '아침기도', unit: '회' },
+    { key: 'evening', label: '저녁기도', unit: '회' },
+    { key: 'catena',  label: '까떼나',   unit: '회' },
+  ];
+
+  const items = [];
+  PRAYER_ORDER.forEach(({ key, label, unit }) => {
+    if (totals[key] > 0) items.push({ label, val: totals[key], unit });
+  });
+  WEEK_ITEMS.forEach(it => {
+    if (it.type === 'memo') return;
+    const v = totals[it.key];
+    if (!v) return;
+    const unit = it.type === 'check'
+      ? `주 (${count}주 중)`
+      : (it.key === 'rosary' ? '단' : '회');
+    items.push({ label: it.label, val: v, unit });
+  });
+
+  const id = 'agg_' + title.replace(/\s/g,'_');
+  const isOpen = openByDefault;
+
+  const card = document.createElement('div');
+  card.className = 'agg-card';
+  card.innerHTML = `
+    <div class="agg-header" onclick="toggleAgg('${id}')">
+      <span class="agg-title">📅 ${title}</span>
+      <span class="agg-arrow ${isOpen ? 'open' : ''}" id="arr_${id}">▾</span>
+    </div>
+    <div class="agg-body ${isOpen ? 'open' : ''}" id="${id}">
+      <div class="agg-weeks">${count}주 기록 합산</div>
+      <div class="agg-grid">
+        ${items.map(i => `<div class="agg-item"><span>${i.label}</span><span class="av">${i.val} ${i.unit}</span></div>`).join('')}
+      </div>
+    </div>
+  `;
+  return card;
+}
+
+function toggleAgg(id) {
+  const body = document.getElementById(id);
+  const arr  = document.getElementById('arr_' + id);
+  const open = body.classList.toggle('open');
+  arr.classList.toggle('open', open);
 }
 
 // ─── Settings Tab ────────────────────────────────────────────────
