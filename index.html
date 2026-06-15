@@ -1579,9 +1579,7 @@ function renderAggCard(title, weekKeys, openByDefault) {
     if (it.type === 'memo') return;
     const v = totals[it.key];
     if (!v) return;
-    const unit = it.type === 'check'
-      ? `주 (${count}주 중)`
-      : (it.key === 'rosary' ? '단' : '회');
+    const unit = it.key === 'rosary' ? '단' : '회';
     items.push({ label: it.label, val: v, unit });
   });
 
