@@ -1554,8 +1554,7 @@ function aggregateWeeks(weekKeys) {
       if (it.type === 'memo') return;
       const v = s[it.key]?.val;
       if (!v) return;
-      if (it.type === 'check') totals[it.key] += (v ? 1 : 0);
-      else if (it.type === 'num') totals[it.key] += (Number(v) || 0);
+      totals[it.key] += (Number(v) || 0);
     });
   });
   return { totals, count };
